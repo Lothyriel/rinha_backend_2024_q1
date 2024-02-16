@@ -1,8 +1,12 @@
 use axum::{
+    error_handling::HandleError,
     extract::{Json, Path},
+    http::StatusCode,
+    response::IntoResponse,
     routing::{get, post},
     Router,
 };
+
 use chrono::{DateTime, Utc};
 
 #[tokio::main]
@@ -51,7 +55,7 @@ enum TransactionType {
 async fn add_transaction(
     Path(client_id): Path<ClientId>,
     Json(data): Json<TransactionRequest>,
-) -> Json<TransactionResponse> {
+) -> Result<Json<TransactionResponse>, ErrorResponse> {
     todo!()
 }
 
@@ -85,6 +89,30 @@ struct TransactionData {
     date: DateTime<Utc>,
 }
 
-async fn get_extract(Path(client_id): Path<ClientId>) -> Json<ExtractResponse> {
+async fn get_extract(
+    Path(client_id): Path<ClientId>,
+) -> Result<Json<ExtractResponse>, ErrorResponse> {
     todo!()
+}
+
+enum ErrorResponse {
+    ClientNotFound(u32),
+    NoBalance(TransactionRequest),
+}
+
+impl IntoResponse for ErrorResponse {
+    fn into_response(self) -> axum::response::Response {
+        let error = match self {
+            ErrorResponse::ClientNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                format!("Client with id {} not found", id),
+            ),
+            ErrorResponse::NoBalance(_) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Not enough balance to complete this transaction".to_owned(),
+            ),
+        };
+
+        error.into_response()
+    }
 }
