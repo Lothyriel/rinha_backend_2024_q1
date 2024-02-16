@@ -104,7 +104,7 @@ impl IntoResponse for ErrorResponse {
         let error = match self {
             ErrorResponse::ClientNotFound(id) => (
                 StatusCode::NOT_FOUND,
-                format!("Client with id {} not found", id),
+                format!("Client with id {{{}}} not found", id),
             ),
             ErrorResponse::NoBalance(_) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
