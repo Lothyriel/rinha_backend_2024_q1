@@ -8,8 +8,8 @@ use chrono::{DateTime, Utc};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let clients_router = Router::new()
-        .route("transacoes", post(add_transaction))
-        .route("extrato", get(get_extract));
+        .route("/transacoes", post(add_transaction))
+        .route("/extrato", get(get_extract));
 
     let app = Router::new().nest("/clientes/:id", clients_router);
 
