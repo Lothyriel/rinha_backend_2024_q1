@@ -95,7 +95,7 @@ async fn get_extract(
 }
 
 enum ErrorResponse {
-    ClientNotFound(u32),
+    ClientNotFound(ClientId),
     NoBalance(TransactionRequest),
 }
 
