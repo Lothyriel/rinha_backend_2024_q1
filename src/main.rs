@@ -59,6 +59,7 @@ async fn add_transaction(
 struct ExtractResponse {
     #[serde(alias = "saldo")]
     balance: ExtractData,
+    #[serde(alias = "ultimas_transacoes")]
     transactions: Vec<TransactionData>,
 }
 
