@@ -1,5 +1,4 @@
 use axum::{
-    error_handling::HandleError,
     extract::{Json, Path},
     http::StatusCode,
     response::IntoResponse,
