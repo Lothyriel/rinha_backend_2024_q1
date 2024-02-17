@@ -43,7 +43,10 @@ fn insert_transaction_data(
         ),
     )?;
 
-    conn.execute("UPDATE clients SET balance = (?1);", [new_balance])?;
+    conn.execute(
+        "UPDATE clients SET balance = (?1) WHERE id = (?2);",
+        (new_balance, client_id),
+    )?;
 
     Ok(())
 }
