@@ -146,7 +146,7 @@ struct ExtractResponse {
 struct ExtractData {
     #[serde(alias = "total")]
     total: u64,
-    #[serde(alias = "realizada_em")]
+    #[serde(alias = "data_extrato")]
     date: DateTime<Utc>,
     #[serde(alias = "limite")]
     limit: u64,
