@@ -1,4 +1,8 @@
 use chrono::{DateTime, Utc};
+use rusqlite::{
+    types::{FromSql, FromSqlError},
+    ToSql,
+};
 
 use crate::routes::ErrorResponse;
 
@@ -21,11 +25,11 @@ pub struct ExtractResponse {
 #[derive(serde::Deserialize, Debug)]
 pub struct TransactionRequest {
     #[serde(alias = "valor")]
-    value: u64,
+    pub value: u64,
     #[serde(alias = "tipo")]
-    transaction_type: TransactionType,
+    pub transaction_type: TransactionType,
     #[serde(alias = "descricao")]
-    description: String,
+    pub description: String,
 }
 
 #[derive(serde::Serialize)]
@@ -77,5 +81,33 @@ pub enum TransientError {
 impl From<rusqlite::Error> for ErrorResponse {
     fn from(value: rusqlite::Error) -> Self {
         value.into()
+    }
+}
+
+impl FromSql for TransactionType {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        match value {
+            rusqlite::types::ValueRef::Real(_)
+            | rusqlite::types::ValueRef::Integer(_)
+            | rusqlite::types::ValueRef::Null => Err(FromSqlError::InvalidType),
+            rusqlite::types::ValueRef::Blob(e) | rusqlite::types::ValueRef::Text(e) => {
+                match e.first().ok_or_else(|| FromSqlError::InvalidType)? {
+                    b'd' => Ok(TransactionType::Debit),
+                    b'c' => Ok(TransactionType::Credit),
+                    _ => Err(FromSqlError::OutOfRange(e[0] as i64)),
+                }
+            }
+        }
+    }
+}
+
+impl ToSql for TransactionType {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        let value = match self {
+            TransactionType::Debit => "d",
+            TransactionType::Credit => "c",
+        };
+
+        Ok(value.into())
     }
 }
