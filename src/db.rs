@@ -33,7 +33,7 @@ pub fn grant_database_tables(conn: &Connection) -> Result<(), Error> {
         "CREATE TABLE IF NOT EXISTS transactions (
              id INTEGER PRIMARY KEY AUTOINCREMENT,
              client_id INTEGER NOT NULL,
-             value REAL NOT NULL,
+             value INTEGER NOT NULL,
              type TEXT NOT NULL,
              description TEXT NOT NULL,
              date DATETIME NOT NULL
