@@ -5,9 +5,10 @@ mod routes;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+    std::fs::create_dir_all("db")?;
     let pool = async_sqlite::PoolBuilder::new()
-        .path("rinha.db")
         .journal_mode(async_sqlite::JournalMode::Wal)
+        .path("db/rinha.db")
         .open()
         .await?;
 
