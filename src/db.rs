@@ -1,13 +1,11 @@
-use rusqlite::Connection;
+use rusqlite::{Connection, Error};
 
-use crate::models::IoError;
-
-pub fn get_connection() -> Result<Connection, IoError> {
+pub fn get_connection() -> Result<Connection, Error> {
     const DATABASE_FILE: &str = "rinha.db";
     Ok(Connection::open(DATABASE_FILE)?)
 }
 
-pub fn seed_data() -> Result<(), IoError> {
+pub fn seed_data() -> Result<(), Error> {
     let conn = get_connection()?;
 
     let clients_limits = [
@@ -28,7 +26,7 @@ pub fn seed_data() -> Result<(), IoError> {
     Ok(())
 }
 
-pub fn grant_database_tables() -> Result<(), IoError> {
+pub fn grant_database_tables() -> Result<(), Error> {
     let conn = get_connection()?;
 
     conn.execute(
