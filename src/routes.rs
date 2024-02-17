@@ -46,18 +46,7 @@ async fn add_transaction(
 
     let client = get_client(&conn, client_id)?;
 
-    let new_balance = match request.transaction_type {
-        TransactionType::Debit => {
-            let new_balance = client.balance + client.limit as i64 - request.value as i64;
-
-            if new_balance < 0 {
-                return Err(ErrorResponse::NotEnoughLimit);
-            } else {
-                new_balance
-            }
-        }
-        TransactionType::Credit => client.balance + request.value as i64,
-    };
+    let new_balance = get_new_balance(&request, &client).ok_or(ErrorResponse::NotEnoughLimit)?;
 
     conn.execute(
         "INSERT INTO transactions (
@@ -89,9 +78,26 @@ async fn get_extract(
 ) -> Result<Json<ExtractResponse>, ErrorResponse> {
     let conn = get_connection()?;
 
-    let client = get_client(&conn, client_id)?;
+    let _client = get_client(&conn, client_id)?;
 
     todo!()
+}
+
+fn get_new_balance(request: &TransactionRequest, client: &ClientData) -> Option<i64> {
+    let new_balance = match request.transaction_type {
+        TransactionType::Debit => {
+            let new_balance = client.balance + (client.limit as i64 - request.value as i64);
+
+            if new_balance < 0 {
+                return None;
+            } else {
+                client.balance - request.value as i64
+            }
+        }
+        TransactionType::Credit => client.balance + request.value as i64,
+    };
+
+    Some(new_balance)
 }
 
 fn get_client(conn: &Connection, client_id: u32) -> Result<ClientData, ErrorResponse> {
@@ -115,4 +121,111 @@ fn get_client(conn: &Connection, client_id: u32) -> Result<ClientData, ErrorResp
         .ok_or_else(|| ErrorResponse::ClientNotFound(client_id))?;
 
     Ok(client)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_new_balance_1() {
+        let client = ClientData {
+            id: 0,
+            balance: 0,
+            limit: 2000,
+        };
+
+        let transaction = TransactionRequest {
+            description: "Transação".to_owned(),
+            value: 1000,
+            transaction_type: TransactionType::Debit,
+        };
+
+        assert_eq!(get_new_balance(&transaction, &client), Some(-1000));
+    }
+
+    #[test]
+    fn test_get_new_balance_2() {
+        let client = ClientData {
+            id: 0,
+            balance: 10000,
+            limit: 2000,
+        };
+
+        let transaction = TransactionRequest {
+            description: "Transação".to_owned(),
+            value: 1000,
+            transaction_type: TransactionType::Debit,
+        };
+
+        assert_eq!(get_new_balance(&transaction, &client), Some(9000));
+    }
+
+    #[test]
+    fn test_get_new_balance_3() {
+        let client = ClientData {
+            id: 0,
+            balance: 0,
+            limit: 500,
+        };
+
+        let transaction = TransactionRequest {
+            description: "Transação".to_owned(),
+            value: 1000,
+            transaction_type: TransactionType::Debit,
+        };
+
+        assert_eq!(get_new_balance(&transaction, &client), None);
+    }
+
+    #[test]
+    fn test_get_new_balance_4() {
+        let client = ClientData {
+            id: 0,
+            balance: 500,
+            limit: 0,
+        };
+
+        let transaction = TransactionRequest {
+            description: "Transação".to_owned(),
+            value: 1000,
+            transaction_type: TransactionType::Debit,
+        };
+
+        assert_eq!(get_new_balance(&transaction, &client), None);
+    }
+
+    #[test]
+    fn test_get_new_balance_5() {
+        let client = ClientData {
+            id: 0,
+            balance: -1000,
+            limit: 2000,
+        };
+
+        let transaction = TransactionRequest {
+            description: "Transação".to_owned(),
+            value: 1000,
+            transaction_type: TransactionType::Credit,
+        };
+
+        assert_eq!(get_new_balance(&transaction, &client), Some(0));
+    }
+
+    #[test]
+    fn test_get_new_balance_6() {
+        let client = ClientData {
+            id: 0,
+            balance: 0,
+            limit: 2000,
+        };
+
+        let transaction = TransactionRequest {
+            description: "Transação".to_owned(),
+            value: 1000,
+            transaction_type: TransactionType::Credit,
+        };
+
+        assert_eq!(get_new_balance(&transaction, &client), Some(1000));
+    }
 }
