@@ -18,7 +18,7 @@ pub fn seed_data() -> Result<(), Error> {
 
     for (id, limit) in clients_limits {
         conn.execute(
-            "INSERT INTO clients (id, limit, balance) VALUES (?1, ?2, ?3)",
+            "INSERT OR IGNORE INTO clients (id, debit_limit, balance) VALUES (?1, ?2, ?3)",
             (id, limit, 0),
         )?;
     }
@@ -30,16 +30,16 @@ pub fn grant_database_tables() -> Result<(), Error> {
     let conn = get_connection()?;
 
     conn.execute(
-        "CREATE TABLE clients (
+        "CREATE TABLE IF NOT EXISTS clients (
              id INTEGER PRIMARY KEY,
-             limit INTEGER NOT NULL,
+             debit_limit INTEGER NOT NULL,
              balance INTEGER NOT NULL
         );",
         (),
     )?;
 
     conn.execute(
-        "CREATE TABLE transactions (
+        "CREATE TABLE IF NOT EXISTS transactions (
              id INTEGER PRIMARY KEY AUTOINCREMENT,
              client_id INTEGER NOT NULL,
              value REAL NOT NULL,

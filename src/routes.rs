@@ -131,7 +131,7 @@ fn get_client(conn: &Connection, client_id: u32) -> Result<ClientData, ErrorResp
         .query_row(
             "SELECT
                balance,
-               limit
+               debit_limit
              FROM account
              WHERE id = (?1);",
             [client_id],
