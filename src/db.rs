@@ -2,7 +2,7 @@ use rusqlite::{Connection, Error};
 
 pub fn get_connection() -> Result<Connection, Error> {
     const DATABASE_FILE: &str = "rinha.db";
-    Ok(Connection::open(DATABASE_FILE)?)
+    Connection::open(DATABASE_FILE)
 }
 
 pub fn seed_data() -> Result<(), Error> {
