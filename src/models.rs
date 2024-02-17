@@ -17,9 +17,9 @@ pub type ClientId = u32;
 #[derive(serde::Serialize)]
 pub struct ExtractResponse {
     #[serde(alias = "saldo")]
-    balance: ExtractData,
+    pub balance: ExtractData,
     #[serde(alias = "ultimas_transacoes")]
-    transactions: Vec<TransactionData>,
+    pub transactions: Vec<TransactionData>,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -51,23 +51,23 @@ pub enum TransactionType {
 #[derive(serde::Serialize)]
 pub struct ExtractData {
     #[serde(alias = "total")]
-    total: u64,
+    pub total: i64,
     #[serde(alias = "data_extrato")]
-    date: DateTime<Utc>,
+    pub date: DateTime<Utc>,
     #[serde(alias = "limite")]
-    limit: u64,
+    pub limit: u64,
 }
 
 #[derive(serde::Serialize)]
 pub struct TransactionData {
     #[serde(alias = "valor")]
-    value: i64,
+    pub value: i64,
     #[serde(alias = "tipo")]
-    transaction_type: TransactionType,
+    pub transaction_type: TransactionType,
     #[serde(alias = "descricao")]
-    description: String,
+    pub description: String,
     #[serde(alias = "realizada_em")]
-    date: DateTime<Utc>,
+    pub date: DateTime<Utc>,
 }
 
 #[derive(thiserror::Error, Debug)]

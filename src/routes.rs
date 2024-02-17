@@ -78,9 +78,35 @@ async fn get_extract(
 ) -> Result<Json<ExtractResponse>, ErrorResponse> {
     let conn = get_connection()?;
 
-    let _client = get_client(&conn, client_id)?;
+    let client = get_client(&conn, client_id)?;
 
-    todo!()
+    let mut query = conn.prepare(
+        "SELECT value, type, description, date
+            FROM transactions
+         WHERE client_id = (?) 
+         ORDER BY date DESC
+         LIMIT 10;",
+    )?;
+
+    let transactions: Result<_, _> = query
+        .query_map([client_id], |row| {
+            Ok(TransactionData {
+                value: row.get(0)?,
+                transaction_type: row.get(1)?,
+                description: row.get(2)?,
+                date: row.get(3)?,
+            })
+        })?
+        .collect();
+
+    Ok(Json(ExtractResponse {
+        balance: ExtractData {
+            total: client.balance,
+            date: Utc::now(),
+            limit: client.limit,
+        },
+        transactions: transactions?,
+    }))
 }
 
 fn get_new_balance(request: &TransactionRequest, client: &ClientData) -> Option<i64> {
