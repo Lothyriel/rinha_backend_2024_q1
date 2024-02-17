@@ -3,7 +3,6 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use rusqlite::OptionalExtension;
 
 use crate::{db::get_connection, models::*};
 
@@ -34,9 +33,9 @@ async fn add_transaction(
                 })
             },
         )
-        .optional();
+        .optional()?;
 
-    todo!()
+    Ok(Json(data))
 }
 
 async fn get_extract(
