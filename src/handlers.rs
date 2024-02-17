@@ -3,17 +3,29 @@ use chrono::Utc;
 
 use crate::{models::*, routes::ErrorResponse};
 
-pub type Result<T> = core::result::Result<T, ErrorResponse>;
-
 pub fn add_transaction(
     conn: &Connection,
     client_id: u32,
     request: TransactionRequest,
-) -> Result<TransactionResponse> {
-    let client = get_client(&conn, client_id)?;
+) -> Result<TransactionResponse, ErrorResponse> {
+    let client = get_client(conn, client_id)?;
 
     let new_balance = get_new_balance(&request, &client).ok_or(ErrorResponse::NotEnoughLimit)?;
 
+    insert_transaction_data(conn, client_id, request, new_balance)?;
+
+    Ok(TransactionResponse {
+        limit: client.limit,
+        balance: new_balance,
+    })
+}
+
+fn insert_transaction_data(
+    conn: &Connection,
+    client_id: u32,
+    request: TransactionRequest,
+    new_balance: i64,
+) -> anyhow::Result<()> {
     conn.execute(
         "INSERT INTO transactions (
             client_id,
@@ -33,15 +45,20 @@ pub fn add_transaction(
 
     conn.execute("UPDATE clients SET balance = (?1);", [new_balance])?;
 
-    Ok(TransactionResponse {
-        limit: client.limit,
-        balance: new_balance,
-    })
+    Ok(())
 }
 
-pub fn get_extract(conn: &Connection, client_id: u32) -> Result<ExtractResponse> {
-    let client = get_client(&conn, client_id)?;
+pub fn get_extract(conn: &Connection, client_id: u32) -> Result<ExtractResponse, ErrorResponse> {
+    let client = get_client(conn, client_id)?;
 
+    Ok(get_extract_data(conn, client_id, client)?)
+}
+
+fn get_extract_data(
+    conn: &Connection,
+    client_id: u32,
+    client: ClientData,
+) -> anyhow::Result<ExtractResponse> {
     let mut query = conn.prepare(
         "SELECT value, type, description, date
             FROM transactions
@@ -88,13 +105,13 @@ fn get_new_balance(request: &TransactionRequest, client: &ClientData) -> Option<
     Some(new_balance)
 }
 
-fn get_client(conn: &Connection, client_id: u32) -> Result<ClientData> {
+fn get_client(conn: &Connection, client_id: u32) -> Result<ClientData, ErrorResponse> {
     let client = conn
         .query_row(
             "SELECT
                balance,
                debit_limit
-             FROM account
+             FROM clients
              WHERE id = (?1);",
             [client_id],
             |row| {

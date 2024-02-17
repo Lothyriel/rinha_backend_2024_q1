@@ -3,10 +3,8 @@ use chrono::{DateTime, Utc};
 use async_sqlite::rusqlite::{
     self,
     types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, ValueRef},
-    Error, ToSql,
+    ToSql,
 };
-
-use crate::routes::ErrorResponse;
 
 pub struct ClientData {
     pub id: ClientId,
@@ -70,34 +68,6 @@ pub struct TransactionData {
     pub description: String,
     #[serde(alias = "realizada_em")]
     pub date: DateTime<Utc>,
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum TransientError {
-    #[error("{0}")]
-    IO(#[from] std::io::Error),
-    #[error("{0}")]
-    Sql(#[from] SqlError),
-}
-
-#[derive(thiserror::Error, Debug)]
-enum SqlError {
-    #[error("{0}")]
-    Sqlite(#[from] Error),
-    #[error("{0}")]
-    AsyncSqlite(#[from] async_sqlite::Error),
-}
-
-impl From<async_sqlite::Error> for TransientError {
-    fn from(value: async_sqlite::Error) -> Self {
-        value.into()
-    }
-}
-
-impl From<async_sqlite::Error> for ErrorResponse {
-    fn from(value: async_sqlite::Error) -> Self {
-        value.into()
-    }
 }
 
 impl FromSql for TransactionType {
