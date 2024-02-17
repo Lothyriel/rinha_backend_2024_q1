@@ -1,7 +1,9 @@
 use chrono::{DateTime, Utc};
-use rusqlite::{
-    types::{FromSql, FromSqlError},
-    ToSql,
+
+use async_sqlite::rusqlite::{
+    self,
+    types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, ValueRef},
+    Error, ToSql,
 };
 
 use crate::routes::ErrorResponse;
@@ -73,32 +75,38 @@ pub struct TransactionData {
 #[derive(thiserror::Error, Debug)]
 pub enum TransientError {
     #[error("{0}")]
-    Sqlite(#[from] rusqlite::Error),
-    #[error("{0}")]
     IO(#[from] std::io::Error),
     #[error("{0}")]
-    TaskJoin(#[from] tokio::task::JoinError),
+    Sql(#[from] SqlError),
 }
 
-impl From<rusqlite::Error> for ErrorResponse {
-    fn from(value: rusqlite::Error) -> Self {
+#[derive(thiserror::Error, Debug)]
+enum SqlError {
+    #[error("{0}")]
+    Sqlite(#[from] Error),
+    #[error("{0}")]
+    AsyncSqlite(#[from] async_sqlite::Error),
+}
+
+impl From<async_sqlite::Error> for TransientError {
+    fn from(value: async_sqlite::Error) -> Self {
         value.into()
     }
 }
 
-impl From<tokio::task::JoinError> for ErrorResponse {
-    fn from(value: tokio::task::JoinError) -> Self {
+impl From<async_sqlite::Error> for ErrorResponse {
+    fn from(value: async_sqlite::Error) -> Self {
         value.into()
     }
 }
 
 impl FromSql for TransactionType {
-    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         match value {
-            rusqlite::types::ValueRef::Real(_)
-            | rusqlite::types::ValueRef::Integer(_)
-            | rusqlite::types::ValueRef::Null => Err(FromSqlError::InvalidType),
-            rusqlite::types::ValueRef::Blob(e) | rusqlite::types::ValueRef::Text(e) => {
+            ValueRef::Real(_) | ValueRef::Integer(_) | ValueRef::Null => {
+                Err(FromSqlError::InvalidType)
+            }
+            ValueRef::Blob(e) | ValueRef::Text(e) => {
                 match e.first().ok_or_else(|| FromSqlError::InvalidType)? {
                     b'd' => Ok(TransactionType::Debit),
                     b'c' => Ok(TransactionType::Credit),
@@ -110,7 +118,7 @@ impl FromSql for TransactionType {
 }
 
 impl ToSql for TransactionType {
-    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
         let value = match self {
             TransactionType::Debit => "d",
             TransactionType::Credit => "c",

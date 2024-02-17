@@ -1,14 +1,16 @@
 use axum::{
-    extract::{Json, Path},
+    extract::{Json, Path, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
 
-use crate::{handlers, models::*};
-
-type Result<T> = core::result::Result<T, ErrorResponse>;
+use crate::{
+    handlers::{self, Result},
+    models::*,
+    AppState,
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ErrorResponse {
@@ -32,21 +34,29 @@ impl IntoResponse for ErrorResponse {
     }
 }
 
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/transacoes", post(add_transaction))
         .route("/extrato", get(get_extract))
 }
 
 async fn add_transaction(
+    State(state): State<AppState>,
     Path(client_id): Path<ClientId>,
     Json(request): Json<TransactionRequest>,
 ) -> Result<Json<TransactionResponse>> {
-    handlers::add_transaction(client_id, request)
-        .await
-        .map(Json)
+    state
+        .db_pool
+        .conn(move |conn| Ok(handlers::add_transaction(conn, client_id, request).map(Json)))
+        .await?
 }
 
-async fn get_extract(Path(client_id): Path<ClientId>) -> Result<Json<ExtractResponse>> {
-    handlers::get_extract(client_id).await.map(Json)
+async fn get_extract(
+    State(state): State<AppState>,
+    Path(client_id): Path<ClientId>,
+) -> Result<Json<ExtractResponse>> {
+    state
+        .db_pool
+        .conn(move |conn| Ok(handlers::get_extract(conn, client_id).map(Json)))
+        .await?
 }

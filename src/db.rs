@@ -1,13 +1,6 @@
-use rusqlite::{Connection, Error};
+use async_sqlite::rusqlite::{Connection, Error};
 
-pub fn get_connection() -> Result<Connection, Error> {
-    const DATABASE_FILE: &str = "rinha.db";
-    Connection::open(DATABASE_FILE)
-}
-
-pub fn seed_data() -> Result<(), Error> {
-    let conn = get_connection()?;
-
+pub fn seed_data(conn: &Connection) -> Result<(), Error> {
     let clients_limits = [
         (1, 100000),
         (2, 80000),
@@ -26,9 +19,7 @@ pub fn seed_data() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn grant_database_tables() -> Result<(), Error> {
-    let conn = get_connection()?;
-
+pub fn grant_database_tables(conn: &Connection) -> Result<(), Error> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS clients (
              id INTEGER PRIMARY KEY,

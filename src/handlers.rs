@@ -1,14 +1,15 @@
+use async_sqlite::rusqlite::{Connection, OptionalExtension};
 use chrono::Utc;
-use rusqlite::{Connection, OptionalExtension};
 
-use crate::{db::get_connection, models::*, routes::ErrorResponse};
+use crate::{models::*, routes::ErrorResponse};
 
-pub async fn add_transaction(
+pub type Result<T> = core::result::Result<T, ErrorResponse>;
+
+pub fn add_transaction(
+    conn: &Connection,
     client_id: u32,
     request: TransactionRequest,
-) -> Result<TransactionResponse, ErrorResponse> {
-    let conn = get_connection()?;
-
+) -> Result<TransactionResponse> {
     let client = get_client(&conn, client_id)?;
 
     let new_balance = get_new_balance(&request, &client).ok_or(ErrorResponse::NotEnoughLimit)?;
@@ -38,9 +39,7 @@ pub async fn add_transaction(
     })
 }
 
-pub async fn get_extract(client_id: u32) -> Result<ExtractResponse, ErrorResponse> {
-    let conn = get_connection()?;
-
+pub fn get_extract(conn: &Connection, client_id: u32) -> Result<ExtractResponse> {
     let client = get_client(&conn, client_id)?;
 
     let mut query = conn.prepare(
@@ -89,7 +88,7 @@ fn get_new_balance(request: &TransactionRequest, client: &ClientData) -> Option<
     Some(new_balance)
 }
 
-fn get_client(conn: &Connection, client_id: u32) -> Result<ClientData, ErrorResponse> {
+fn get_client(conn: &Connection, client_id: u32) -> Result<ClientData> {
     let client = conn
         .query_row(
             "SELECT
