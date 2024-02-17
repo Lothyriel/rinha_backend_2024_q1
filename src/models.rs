@@ -1,6 +1,14 @@
-use axum::{http::StatusCode, response::IntoResponse};
-
 use chrono::{DateTime, Utc};
+
+use crate::routes::ErrorResponse;
+
+pub struct ClientData {
+    pub id: ClientId,
+    pub limit: u64,
+    pub balance: i64,
+}
+
+pub type ClientId = u32;
 
 #[derive(serde::Serialize)]
 pub struct ExtractResponse {
@@ -9,8 +17,6 @@ pub struct ExtractResponse {
     #[serde(alias = "ultimas_transacoes")]
     transactions: Vec<TransactionData>,
 }
-
-pub type ClientId = u32;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct TransactionRequest {
@@ -61,25 +67,15 @@ pub struct TransactionData {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum ErrorResponse {
-    #[error("{0}")]
-    IO(#[from] std::io::Error),
+pub enum TransientError {
     #[error("{0}")]
     Sqlite(#[from] rusqlite::Error),
-    #[error("Client with id {{0}} not found")]
-    ClientNotFound(ClientId),
-    #[error("Not enough balance to complete this transaction")]
-    NoBalance,
+    #[error("{0}")]
+    IO(#[from] std::io::Error),
 }
 
-impl IntoResponse for ErrorResponse {
-    fn into_response(self) -> axum::response::Response {
-        let status_code = match &self {
-            ErrorResponse::ClientNotFound(_) => StatusCode::NOT_FOUND,
-            ErrorResponse::NoBalance => StatusCode::UNPROCESSABLE_ENTITY,
-            ErrorResponse::IO(_) | ErrorResponse::Sqlite(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-
-        (status_code, self).into_response()
+impl From<rusqlite::Error> for ErrorResponse {
+    fn from(value: rusqlite::Error) -> Self {
+        value.into()
     }
 }
