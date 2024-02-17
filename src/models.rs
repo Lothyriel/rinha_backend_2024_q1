@@ -63,7 +63,9 @@ pub struct TransactionData {
 #[derive(thiserror::Error, Debug)]
 pub enum ErrorResponse {
     #[error("{0}")]
-    IO(#[from] IoError),
+    IO(#[from] std::io::Error),
+    #[error("{0}")]
+    Sqlite(#[from] rusqlite::Error),
     #[error("Client with id {{0}} not found")]
     ClientNotFound(ClientId),
     #[error("Not enough balance to complete this transaction")]
@@ -75,17 +77,9 @@ impl IntoResponse for ErrorResponse {
         let status_code = match &self {
             ErrorResponse::ClientNotFound(_) => StatusCode::NOT_FOUND,
             ErrorResponse::NoBalance => StatusCode::UNPROCESSABLE_ENTITY,
-            ErrorResponse::IO(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorResponse::IO(_) | ErrorResponse::Sqlite(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
         (status_code, self).into_response()
     }
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum IoError {
-    #[error("{0}")]
-    Io(#[from] std::io::Error),
-    #[error("{0}")]
-    Sqlite(#[from] rusqlite::Error),
 }
