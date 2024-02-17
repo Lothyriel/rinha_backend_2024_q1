@@ -30,7 +30,7 @@ pub fn grant_database_tables() -> Result<(), Error> {
     let conn = get_connection()?;
 
     conn.execute(
-        "CREATE TABLE account (
+        "CREATE TABLE clients (
              id INTEGER PRIMARY KEY,
              limit INTEGER NOT NULL,
              balance INTEGER NOT NULL
