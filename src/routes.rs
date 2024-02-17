@@ -5,6 +5,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+
 use tokio::task::spawn_blocking;
 
 use crate::{handlers, models::*};
@@ -43,17 +44,19 @@ async fn add_transaction(
     Path(client_id): Path<ClientId>,
     Json(request): Json<TransactionRequest>,
 ) -> Result<Json<TransactionResponse>> {
-    spawn_blocking(move || serialize(handlers::add_transaction(client_id, request)))
-        .await
-        .unwrap()
+    block(move || handlers::add_transaction(client_id, request)).await
 }
 
 async fn get_extract(Path(client_id): Path<ClientId>) -> Result<Json<ExtractResponse>> {
-    spawn_blocking(move || serialize(handlers::get_extract(client_id)))
+    spawn_blocking(move || handlers::get_extract(client_id).map(Json))
         .await
         .unwrap()
 }
 
-fn serialize<T: serde::Serialize>(data: Result<T>) -> Result<Json<T>> {
-    data.map(|v| Json(v))
+async fn block<T, F>(f: F) -> Result<Json<T>>
+where
+    T: serde::Serialize + Send + 'static,
+    F: FnOnce() -> Result<T> + Send + 'static,
+{
+    spawn_blocking(|| f().map(Json)).await?
 }

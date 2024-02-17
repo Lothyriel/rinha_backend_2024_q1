@@ -76,10 +76,18 @@ pub enum TransientError {
     Sqlite(#[from] rusqlite::Error),
     #[error("{0}")]
     IO(#[from] std::io::Error),
+    #[error("{0}")]
+    TaskJoin(#[from] tokio::task::JoinError),
 }
 
 impl From<rusqlite::Error> for ErrorResponse {
     fn from(value: rusqlite::Error) -> Self {
+        value.into()
+    }
+}
+
+impl From<tokio::task::JoinError> for ErrorResponse {
+    fn from(value: tokio::task::JoinError) -> Self {
         value.into()
     }
 }
