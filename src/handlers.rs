@@ -3,7 +3,7 @@ use rusqlite::{Connection, OptionalExtension};
 
 use crate::{db::get_connection, models::*, routes::ErrorResponse};
 
-pub fn add_transaction(
+pub async fn add_transaction(
     client_id: u32,
     request: TransactionRequest,
 ) -> Result<TransactionResponse, ErrorResponse> {
@@ -38,7 +38,7 @@ pub fn add_transaction(
     })
 }
 
-pub fn get_extract(client_id: u32) -> Result<ExtractResponse, ErrorResponse> {
+pub async fn get_extract(client_id: u32) -> Result<ExtractResponse, ErrorResponse> {
     let conn = get_connection()?;
 
     let client = get_client(&conn, client_id)?;

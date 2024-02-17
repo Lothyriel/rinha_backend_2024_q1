@@ -6,8 +6,6 @@ use axum::{
     Router,
 };
 
-use tokio::task::spawn_blocking;
-
 use crate::{handlers, models::*};
 
 type Result<T> = core::result::Result<T, ErrorResponse>;
@@ -44,19 +42,11 @@ async fn add_transaction(
     Path(client_id): Path<ClientId>,
     Json(request): Json<TransactionRequest>,
 ) -> Result<Json<TransactionResponse>> {
-    block(move || handlers::add_transaction(client_id, request)).await
+    handlers::add_transaction(client_id, request)
+        .await
+        .map(Json)
 }
 
 async fn get_extract(Path(client_id): Path<ClientId>) -> Result<Json<ExtractResponse>> {
-    spawn_blocking(move || handlers::get_extract(client_id).map(Json))
-        .await
-        .unwrap()
-}
-
-async fn block<T, F>(f: F) -> Result<Json<T>>
-where
-    T: serde::Serialize + Send + 'static,
-    F: FnOnce() -> Result<T> + Send + 'static,
-{
-    spawn_blocking(|| f().map(Json)).await?
+    handlers::get_extract(client_id).await.map(Json)
 }
