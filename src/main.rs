@@ -1,11 +1,12 @@
 use axum::Router;
+use models::TransientError;
 
 mod db;
 mod models;
 mod routes;
 
 #[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
+async fn main() -> Result<(), TransientError> {
     db::grant_database_tables()?;
     db::seed_data()?;
 
