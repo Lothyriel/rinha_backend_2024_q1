@@ -10,4 +10,6 @@ RUN cargo build --release
 FROM gcr.io/distroless/cc
 COPY --from=builder /target/release/rinha_backend_2024_q1 /
 
+EXPOSE 9999
+
 ENTRYPOINT ["./rinha_backend_2024_q1"]
