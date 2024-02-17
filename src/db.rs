@@ -18,7 +18,7 @@ pub fn seed_data() -> Result<(), Error> {
 
     for (id, limit) in clients_limits {
         conn.execute(
-            "INSERT INTO clients (id, limit, balance) VALUES (?, ?, ?)",
+            "INSERT INTO clients (id, limit, balance) VALUES (?1, ?2, ?3)",
             (id, limit, 0),
         )?;
     }
