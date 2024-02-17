@@ -9,7 +9,7 @@ use axum::{
 use chrono::{DateTime, Utc};
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<(), IoError> {
     let clients_router = Router::new()
         .route("/transacoes", post(add_transaction))
         .route("/extrato", get(get_extract));
@@ -25,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
 
 type ClientId = u32;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 struct TransactionRequest {
     #[serde(alias = "valor")]
     value: u64,
@@ -94,24 +94,32 @@ async fn get_extract(
     todo!()
 }
 
+#[derive(thiserror::Error, Debug)]
 enum ErrorResponse {
+    #[error("{0}")]
+    IO(#[from] IoError),
+    #[error("Client with id {{0}} not found")]
     ClientNotFound(ClientId),
-    NoBalance(TransactionRequest),
+    #[error("Not enough balance to complete this transaction")]
+    NoBalance,
 }
 
 impl IntoResponse for ErrorResponse {
     fn into_response(self) -> axum::response::Response {
-        let error = match self {
-            ErrorResponse::ClientNotFound(id) => (
-                StatusCode::NOT_FOUND,
-                format!("Client with id {{{}}} not found", id),
-            ),
-            ErrorResponse::NoBalance(_) => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "Not enough balance to complete this transaction".to_owned(),
-            ),
+        let status_code = match self {
+            ErrorResponse::ClientNotFound(id) => StatusCode::NOT_FOUND,
+            ErrorResponse::NoBalance => StatusCode::UNPROCESSABLE_ENTITY,
+            ErrorResponse::IO(e) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
-        error.into_response()
+        (status_code, self).into_response()
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+enum IoError {
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
+    #[error("{0}")]
+    Sqlite(#[from] rusqlite::Error),
 }
