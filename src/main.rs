@@ -7,9 +7,13 @@ use axum::{
 };
 
 use chrono::{DateTime, Utc};
+use rusqlite::{Connection, OptionalExtension};
 
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
+    grant_database_tables()?;
+    seed_data()?;
+
     let clients_router = Router::new()
         .route("/transacoes", post(add_transaction))
         .route("/extrato", get(get_extract));
@@ -21,6 +25,59 @@ async fn main() -> Result<(), IoError> {
     axum::serve(listener, app).await?;
 
     Ok(())
+}
+
+fn seed_data() -> Result<Connection, IoError> {
+    let conn = get_connection()?;
+
+    let clients_limits = [
+        (1, 100000),
+        (2, 80000),
+        (3, 1000000),
+        (4, 10000000),
+        (5, 500000),
+    ];
+
+    for (id, limit) in clients_limits {
+        conn.execute(
+            "INSERT INTO clients (id, limit, balance) VALUES (?, ?, ?)",
+            (id, limit, 0),
+        )?;
+    }
+
+    Ok(())
+}
+
+fn grant_database_tables() -> Result<Connection, IoError> {
+    let conn = get_connection()?;
+
+    conn.execute(
+        "CREATE TABLE account (
+             id INTEGER PRIMARY KEY,
+             limit INTEGER NOT NULL,
+             balance INTEGER NOT NULL
+        );",
+        (),
+    )?;
+
+    conn.execute(
+        "CREATE TABLE transactions (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             client_id INTEGER NOT NULL,
+             value REAL NOT NULL,
+             type TEXT NOT NULL,
+             description TEXT NOT NULL,
+             date DATETIME NOT NULL
+        );",
+        (),
+    )?;
+
+    Ok(())
+}
+
+fn get_connection() -> Result<Connection, IoError> {
+    const DATABASE_FILE: &str = "rinha.db";
+    Ok(Connection::open(DATABASE_FILE)?)
 }
 
 type ClientId = u32;
@@ -55,6 +112,25 @@ async fn add_transaction(
     Path(client_id): Path<ClientId>,
     Json(data): Json<TransactionRequest>,
 ) -> Result<Json<TransactionResponse>, ErrorResponse> {
+    let conn = get_connection()?;
+
+    let data = conn
+        .query_row(
+            "SELECT
+               balance,
+               limit
+             FROM account
+             WHERE id = :client_id;",
+            [client_id],
+            |row| {
+                Ok(TransactionResponse {
+                    balance: row.get(0)?,
+                    limit: row.get(1)?,
+                })
+            },
+        )
+        .optional();
+
     todo!()
 }
 
