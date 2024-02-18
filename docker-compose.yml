@@ -2,7 +2,7 @@ version: "3.5"
 
 services:
   api:
-    build: https://github.com/Lothyriel/rinha_backend_2024_q1
+    build: https://github.com/Lothyriel/rinha_backend_2024_q1.git
 
     ports:
       - "9999:9999"
