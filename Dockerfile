@@ -7,7 +7,7 @@ COPY Cargo.toml ./
 RUN cargo build --release
 
 # Prod stage
-FROM gcr.io/distroless/cc
+FROM debian:stable-slim
 COPY --from=builder /target/release/rinha_backend_2024_q1 /
 
 EXPOSE 9999
