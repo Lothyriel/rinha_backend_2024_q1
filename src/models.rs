@@ -16,9 +16,9 @@ pub type ClientId = u32;
 
 #[derive(serde::Serialize)]
 pub struct ExtractResponse {
-    #[serde(alias = "saldo")]
+    #[serde(rename = "saldo")]
     pub balance: ExtractData,
-    #[serde(alias = "ultimas_transacoes")]
+    #[serde(rename = "ultimas_transacoes")]
     pub transactions: Vec<TransactionData>,
 }
 
@@ -34,9 +34,9 @@ pub struct TransactionRequest {
 
 #[derive(serde::Serialize)]
 pub struct TransactionResponse {
-    #[serde(alias = "limite")]
+    #[serde(rename = "limite")]
     pub limit: u64,
-    #[serde(alias = "saldo")]
+    #[serde(rename = "saldo")]
     pub balance: i64,
 }
 
@@ -50,23 +50,23 @@ pub enum TransactionType {
 
 #[derive(serde::Serialize)]
 pub struct ExtractData {
-    #[serde(alias = "total")]
+    #[serde(rename = "total")]
     pub total: i64,
-    #[serde(alias = "data_extrato")]
+    #[serde(rename = "data_extrato")]
     pub date: DateTime<Utc>,
-    #[serde(alias = "limite")]
+    #[serde(rename = "limite")]
     pub limit: u64,
 }
 
 #[derive(serde::Serialize)]
 pub struct TransactionData {
-    #[serde(alias = "valor")]
+    #[serde(rename = "valor")]
     pub value: i64,
-    #[serde(alias = "tipo")]
+    #[serde(rename = "tipo")]
     pub transaction_type: TransactionType,
-    #[serde(alias = "descricao")]
+    #[serde(rename = "descricao")]
     pub description: String,
-    #[serde(alias = "realizada_em")]
+    #[serde(rename = "realizada_em")]
     pub date: DateTime<Utc>,
 }
 
