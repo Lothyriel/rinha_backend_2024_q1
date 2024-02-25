@@ -64,7 +64,7 @@ fn get_extract_data(
 ) -> anyhow::Result<ExtractResponse> {
     let mut query = conn.prepare(
         "SELECT value, type, description, date
-            FROM transactions
+         FROM transactions
          WHERE client_id = (?) 
          ORDER BY date DESC
          LIMIT 10;",
