@@ -42,9 +42,9 @@ pub struct TransactionResponse {
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub enum TransactionType {
-    #[serde(alias = "d")]
+    #[serde(rename = "d")]
     Debit,
-    #[serde(alias = "c")]
+    #[serde(rename = "c")]
     Credit,
 }
 
