@@ -14,6 +14,7 @@ pub enum ErrorResponse {
     Transient(anyhow::Error),
     ClientNotFound(ClientId),
     NotEnoughLimit,
+    InvalidDescription,
 }
 
 impl From<anyhow::Error> for ErrorResponse {
@@ -41,7 +42,7 @@ impl IntoResponse for ErrorResponse {
                 StatusCode::NOT_FOUND,
                 format!("Client with id {{{}}} not found", id),
             ),
-            ErrorResponse::NotEnoughLimit => (
+            ErrorResponse::NotEnoughLimit | ErrorResponse::InvalidDescription => (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "Not enough limit to complete this transaction".to_owned(),
             ),

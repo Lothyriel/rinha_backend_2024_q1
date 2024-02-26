@@ -8,6 +8,10 @@ pub fn add_transaction(
     client_id: u32,
     request: TransactionRequest,
 ) -> Result<TransactionResponse, ErrorResponse> {
+    if request.description.len() > 10 || request.description.is_empty() {
+        return Err(ErrorResponse::InvalidDescription);
+    }
+
     let client = get_client(conn, client_id)?;
 
     let new_balance = get_new_balance(&request, &client).ok_or(ErrorResponse::NotEnoughLimit)?;
