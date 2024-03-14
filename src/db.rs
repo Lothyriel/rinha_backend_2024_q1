@@ -1,15 +1,7 @@
 use async_sqlite::rusqlite::{Connection, Error};
 
-pub fn seed_data(conn: &Connection) -> Result<(), Error> {
-    let clients_limits = [
-        (1, 100000),
-        (2, 80000),
-        (3, 1000000),
-        (4, 10000000),
-        (5, 500000),
-    ];
-
-    for (id, limit) in clients_limits {
+pub fn seed_data(conn: &Connection, data: &[(u32, u32)]) -> Result<(), Error> {
+    for (id, limit) in data {
         conn.execute(
             "INSERT OR IGNORE INTO clients (id, debit_limit, balance) VALUES (?1, ?2, ?3)",
             (id, limit, 0),
