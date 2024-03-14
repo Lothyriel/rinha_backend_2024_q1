@@ -10,6 +10,7 @@ use axum::{
 
 use crate::{handlers, models::*, AppState};
 
+#[derive(Debug)]
 pub enum ErrorResponse {
     Transient(anyhow::Error),
     ClientNotFound(ClientId),
@@ -66,7 +67,7 @@ async fn add_transaction(
 ) -> Result<Json<TransactionResponse>, ErrorResponse> {
     state
         .db_pool
-        .conn(move |conn| Ok(handlers::add_transaction(conn, client_id, request).map(Json)))
+        .conn_mut(move |conn| Ok(handlers::add_transaction(conn, client_id, request).map(Json)))
         .await?
 }
 

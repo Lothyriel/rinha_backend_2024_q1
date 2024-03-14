@@ -4,7 +4,7 @@ use chrono::Utc;
 use crate::{models::*, routes::ErrorResponse};
 
 pub fn add_transaction(
-    conn: &Connection,
+    conn: &mut Connection,
     client_id: u32,
     request: TransactionRequest,
 ) -> Result<TransactionResponse, ErrorResponse> {
@@ -16,7 +16,7 @@ pub fn add_transaction(
 
     let new_balance = get_new_balance(&request, &client).ok_or(ErrorResponse::NotEnoughLimit)?;
 
-    insert_transaction_data(conn, client_id, request, new_balance)?;
+    insert_transaction_data(conn, client.id, request, new_balance)?;
 
     Ok(TransactionResponse {
         limit: client.limit,
@@ -25,12 +25,14 @@ pub fn add_transaction(
 }
 
 fn insert_transaction_data(
-    conn: &Connection,
+    conn: &mut Connection,
     client_id: u32,
     request: TransactionRequest,
     new_balance: i64,
 ) -> anyhow::Result<()> {
-    conn.execute(
+    let tx = conn.transaction()?;
+
+    tx.execute(
         "INSERT INTO transactions (
             client_id,
             value,
@@ -47,10 +49,12 @@ fn insert_transaction_data(
         ),
     )?;
 
-    conn.execute(
+    tx.execute(
         "UPDATE clients SET balance = (?1) WHERE id = (?2);",
         (new_balance, client_id),
     )?;
+
+    tx.commit()?;
 
     Ok(())
 }
