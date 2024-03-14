@@ -14,7 +14,7 @@ pub struct ClientData {
 
 pub type ClientId = u32;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Debug)]
 pub struct ExtractResponse {
     #[serde(rename = "saldo")]
     pub balance: ExtractData,
@@ -48,7 +48,7 @@ pub enum TransactionType {
     Credit,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Debug)]
 pub struct ExtractData {
     #[serde(rename = "total")]
     pub total: i64,
@@ -58,7 +58,7 @@ pub struct ExtractData {
     pub limit: u64,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Debug)]
 pub struct TransactionData {
     #[serde(rename = "valor")]
     pub value: i64,
