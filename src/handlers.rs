@@ -75,6 +75,8 @@ fn get_client(conn: &Connection, client_id: u32) -> Result<ClientData, ErrorResp
 
 #[cfg(test)]
 mod tests {
+    use crate::db::{grant_database_tables, seed_data};
+
     use super::*;
 
     #[test]
@@ -177,5 +179,69 @@ mod tests {
         };
 
         assert_eq!(get_new_balance(&transaction, &client), Some(1000));
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_transaction() {
+        const DB_FILE: &str = "rinha.db";
+
+        let client = ClientData {
+            id: 1,
+            balance: 0,
+            limit: 1000,
+        };
+
+        let tx = TransactionRequest {
+            description: "Tx".to_owned(),
+            value: 550,
+            transaction_type: TransactionType::Debit,
+        };
+
+        let pool = async_sqlite::PoolBuilder::new()
+            .journal_mode(async_sqlite::JournalMode::Wal)
+            .path(DB_FILE)
+            .open()
+            .await
+            .unwrap();
+
+        pool.conn(move |c| {
+            grant_database_tables(c)?;
+            seed_data(c, &[(client.id, client.limit as u32)])
+        })
+        .await
+        .unwrap();
+
+        let txs = (0..2).map(|_| {
+            let t = tx.clone();
+            pool.conn_mut(move |c| {
+                add_transaction(c, client.id, t).unwrap();
+                Ok(())
+            })
+        });
+
+        let result = futures::future::join_all(txs).await;
+
+        let client = pool
+            .conn(move |c| {
+                let data = get_client(c, client.id).unwrap();
+                Ok(data)
+            })
+            .await
+            .unwrap();
+
+        let extract = pool
+            .conn(move |c| Ok(get_extract(c, client.id).unwrap()))
+            .await
+            .unwrap();
+
+        std::fs::remove_file(DB_FILE).unwrap();
+        _ = std::fs::remove_file(DB_FILE.to_owned() + "-shm");
+        _ = std::fs::remove_file(DB_FILE.to_owned() + "-wal");
+
+        assert_eq!(client.balance, -550);
+
+        assert_eq!(extract.transactions.len(), 1);
+
+        assert!(result.iter().any(|r| r.is_err()));
     }
 }
