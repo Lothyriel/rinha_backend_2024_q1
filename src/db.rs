@@ -43,7 +43,7 @@ pub fn insert_transaction_data(
     client_id: u32,
     request: TransactionRequest,
     new_balance: i64,
-) -> anyhow::Result<()> {
+) -> Result<(), Error> {
     let tx = conn.transaction()?;
 
     tx.execute(
@@ -77,7 +77,7 @@ pub fn get_extract_data(
     conn: &Connection,
     client_id: u32,
     client: ClientData,
-) -> anyhow::Result<ExtractResponse> {
+) -> Result<ExtractResponse, Error> {
     let mut query = conn.prepare(
         "SELECT value, type, description, date
          FROM transactions
