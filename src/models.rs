@@ -22,7 +22,7 @@ pub struct ExtractResponse {
     pub transactions: Vec<TransactionData>,
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct TransactionRequest {
     #[serde(alias = "valor")]
     pub value: u64,
@@ -40,7 +40,7 @@ pub struct TransactionResponse {
     pub balance: i64,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, Copy)]
 pub enum TransactionType {
     #[serde(rename = "d")]
     Debit,
