@@ -1,4 +1,4 @@
-use async_sqlite::rusqlite::{Connection, Error};
+use async_sqlite::rusqlite::{Connection, Error, Transaction};
 
 use crate::models::*;
 
@@ -39,13 +39,11 @@ pub fn grant_database_tables(conn: &Connection) -> Result<(), Error> {
 }
 
 pub fn insert_transaction_data(
-    conn: &mut Connection,
+    tx: &Transaction,
     client_id: u32,
     request: TransactionRequest,
     new_balance: i64,
 ) -> Result<(), Error> {
-    let tx = conn.transaction()?;
-
     tx.execute(
         "INSERT INTO transactions (
             client_id,
@@ -67,8 +65,6 @@ pub fn insert_transaction_data(
         "UPDATE clients SET balance = (?1) WHERE id = (?2);",
         (new_balance, client_id),
     )?;
-
-    tx.commit()?;
 
     Ok(())
 }

@@ -15,11 +15,15 @@ pub fn add_transaction(
         return Err(ErrorResponse::InvalidDescription);
     }
 
-    let client = get_client(conn, client_id)?;
+    let tx = conn.transaction()?;
+
+    let client = get_client(&tx, client_id)?;
 
     let new_balance = get_new_balance(&request, &client).ok_or(ErrorResponse::NotEnoughLimit)?;
 
-    insert_transaction_data(conn, client.id, request, new_balance)?;
+    insert_transaction_data(&tx, client.id, request, new_balance)?;
+
+    tx.commit()?;
 
     Ok(TransactionResponse {
         limit: client.limit,
